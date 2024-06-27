@@ -1,32 +1,45 @@
-use std::io::{self, Write};
+use clap::Parser;
 use std::process::{Command, Output};
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[arg(short = 'p', long = "path", default_value = ".")]
+    path: Option<String>,
+
+    #[arg(short = 'f', long = "feature")]
+    feature_branch: Option<String>,
+
+    #[arg(short = 'l', long = "local")]
+    local_branch: Option<String>,
+
+    #[arg(long = "pull")]
+    pull: bool,
+
+    #[arg(long = "push")]
+    push: bool,
+}
+
 fn main() {
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
-    let input = input.trim();
-    let args: Vec<&str> = input.split_whitespace().collect();
+    let cli = Cli::parse();
 
-    let path = args[0];
-    let feature = args[1];
-    let local = args[2];
+    if let (Some(path), Some(feature_branch), Some(local_branch)) =
+        (&cli.path, &cli.feature_branch, &cli.local_branch)
+    {
+        if cli.pull {
+            git_command("checkout", feature_branch, path);
+            git_command("pull", feature_branch, path);
+            git_command("checkout", local_branch, path);
+        }
 
-    if args.iter().any(|a| a.to_string() == "-p") {
-        git_command("checkout", feature, path);
-        git_command("pull", feature, path);
-        git_command("checkout", local, path);
+        git_command("merge", feature_branch, path);
+
+        if cli.push {
+            git_command("push", local_branch, path);
+        }
+
+        println!("Finished...");
     }
-
-    git_command("merge", feature, path);
-
-    if args.iter().any(|a| a.to_string() == "-P") {
-        git_command("push", local, path);
-    }
-
-    io::stdin().read_line(&mut String::new()).unwrap();
 }
 
 fn git_command(command: &str, branch: &str, path: &str) {
