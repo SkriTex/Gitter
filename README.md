@@ -9,6 +9,8 @@ The Git Automation Tool simplifies common Git operations such as merging feature
 
 **commit** - Perform Git operations including committing changes, pulling updates, merging branches, and pushing commits. All options are optional as defaults can be retrieved from settings.
 
+**show** - Displays settings values
+
 ### Command Details
 
 **set [--key] <key> [--value] <value>**
@@ -18,7 +20,11 @@ The Git Automation Tool simplifies common Git operations such as merging feature
 **commit [-m|--message] <message> [-l|--local] <local_branch> [-f|--feature] <feature_branch> [-p|--path] <repository_path> [--push] [--pull]**
 - Commit changes with a specified message, pull and merge from a feature branch into a local branch, and optionally push changes. All options are optional and can be pulled from settings.
 - Example: `commit -m "Fix: Issue #123" -l main -f feature-branch -p /path/to/repository --pull --pull`
-- Example with values in settings `commit -m "Fix: Issue #123" --pull --push`
+- Example with values in settings `commit -m "Fix: Issue #123 --pull --push"`
+
+**show 
+- [-a|--all] Displays all values from settings.
+- [-k|--key] <key> Displays value of key.
 
 ---
 
