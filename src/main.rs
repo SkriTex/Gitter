@@ -2,6 +2,7 @@ mod structs;
 
 use clap::Parser;
 use colored::Colorize;
+use std::fmt::format;
 use std::io::{self, Write};
 use std::path::Path;
 use std::process::{Command, Output};
@@ -58,7 +59,31 @@ fn main() {
                 Err(e) => eprintln!("Failed to write settings: {}", e),
             }
         }
+
+        Commands::Show { all, key } => {
+            if *all {
+                for x in settings_content.iter() {
+                    println!("{}", x);
+                }
+            }
+
+            if let Some(key) = key.as_ref() {
+                println!("{}", find_value_from_key(&settings_content, key));
+            }
+        }
     }
+}
+
+fn find_value_from_key(settings: &Vec<String>, key: &str) -> String {
+    let prefix = format!("{}=", key);
+
+    for entry in settings.iter() {
+        if entry.starts_with(&prefix) {
+            return entry.to_string();
+        }
+    }
+
+    "".to_string()
 }
 
 fn replace_settings_value(mut settings: Vec<String>, key: &str, value: &str) -> Vec<String> {

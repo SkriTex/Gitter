@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 
 pub enum GitCommand {
     Checkout,
@@ -38,6 +38,21 @@ pub enum Commands {
         pull: bool,
         #[arg(long = "push")]
         push: bool,
+    },
+
+    //Command used for showing settings
+    //[all] displays all settings
+    //[key] display value of key from settings
+    #[command(group(
+        ArgGroup::new("show_options")
+        .args(&["all", "key"])
+        .multiple(false)
+    ))]
+    Show {
+        #[arg(short = 'a', long = "all", group = "show_options")]
+        all: bool,
+        #[arg(short = 'k', long = "key", group = "show_options")]
+        key: Option<String>,
     },
 }
 
