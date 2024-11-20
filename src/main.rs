@@ -2,9 +2,9 @@ mod structs;
 
 use clap::Parser;
 use colored::Colorize;
-use std::fmt::format;
+use std::fs::File;
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::{env, fs};
 use structs::Cli;
@@ -13,9 +13,9 @@ use structs::GitCommand;
 use structs::Settings;
 
 fn main() {
+    let cli = Cli::parse();
     let settings_content: Vec<String> = check_for_settings();
     let settings: Settings = parse_settings(&settings_content).expect("Failed to parse settings!");
-    let cli = Cli::parse();
 
     match &cli.command {
         Commands::Commit {
@@ -52,6 +52,13 @@ fn main() {
             }
         }
 
+        Commands::Run {} => {}
+
+        Commands::Init {} => match env::current_dir() {
+            Ok(path) => create_gitter_dir(&path),
+            Err(e) => println!("{}", e),
+        },
+
         Commands::Set { key, value } => {
             let settings: Vec<String> = replace_settings_value(settings_content, key, value);
             match write_settings(&settings) {
@@ -71,6 +78,31 @@ fn main() {
                 println!("{}", find_value_from_key(&settings_content, key));
             }
         }
+    }
+}
+
+fn create_gitter_dir(path: &PathBuf) {
+    let git_path = path.join(".git");
+
+    if git_path.exists() && git_path.is_dir() {
+        let gitter_path = git_path.join("gitter");
+
+        if fs::create_dir_all(&gitter_path).is_ok() {
+            let file_path = gitter_path.join("settings.txt");
+
+            match File::create(&file_path) {
+                Ok(mut file) => {
+                    if let Err(e) = writeln!(file, "Add your settings here") {
+                        eprintln!("Failed to write to the file: {}", e);
+                    } else {
+                        println!("Created and wrote to file: {}", file_path.display());
+                    }
+                }
+                Err(e) => println!("{}", e),
+            }
+        }
+    } else {
+        println!(".git folder does not exist, please run git init firt.");
     }
 }
 
@@ -120,16 +152,20 @@ fn write_settings(settings: &[String]) -> io::Result<()> {
 }
 
 fn check_for_settings() -> Vec<String> {
+    let caller_path = env::current_dir().unwrap();
+    let repo_settings = caller_path.join(".git").join("gitter").join("settings.txt");
     let cwd = env::current_exe().expect("CWD not found!");
     let parent = cwd.parent().expect("Failed to extract parent dir!");
     let settings_path = parent.join("gitter_settings.txt");
     let mut settings = String::new();
 
-    if !Path::new(&settings_path).exists() {
-        _ = fs::File::create(&settings_path);
-    } else {
-        settings = fs::read_to_string(settings_path).expect("Failed to read settings file!");
+    if !Path::new(&repo_settings).exists() {
+        settings = fs::read_to_string(repo_settings).expect("Failed to read settings file!");
+        // _ = fs::File::create(&repo_settings);
     }
+    // } else {
+    //     settings = fs::read_to_string(settings_path).expect("Failed to read settings file!");
+    // }
 
     settings.lines().map(|line| line.to_string()).collect()
 }

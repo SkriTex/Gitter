@@ -18,6 +18,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    Init,
+
     Set {
         #[arg(short, long, required = true)]
         key: String,
@@ -54,6 +56,9 @@ pub enum Commands {
         #[arg(short = 'k', long = "key", group = "show_options")]
         key: Option<String>,
     },
+
+    //Used for running custom automation files
+    Run {},
 }
 
 pub struct Settings {
