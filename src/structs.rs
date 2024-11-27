@@ -58,7 +58,10 @@ pub enum Commands {
     },
 
     //Used for running custom automation files
-    Run {},
+    Run {
+        #[arg(name = "name", group = "run_options")]
+        name: Option<String>,
+    },
 }
 
 pub struct Settings {

@@ -3,9 +3,9 @@ mod structs;
 use clap::Parser;
 use colored::Colorize;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 use std::{env, fs};
 use structs::Cli;
 use structs::Commands;
@@ -14,8 +14,8 @@ use structs::Settings;
 
 fn main() {
     let cli = Cli::parse();
-    let settings_content: Vec<String> = check_for_settings();
-    let settings: Settings = parse_settings(&settings_content).expect("Failed to parse settings!");
+
+    let env_path = env::current_dir().unwrap();
 
     match &cli.command {
         Commands::Commit {
@@ -26,6 +26,9 @@ fn main() {
             pull,
             push,
         } => {
+            let settings_content: Vec<String> = check_for_settings();
+            let settings: Settings =
+                parse_settings(&settings_content).expect("Failed to parse settings!");
             let path = path.as_ref().unwrap();
             let feature_b = feature_branch
                 .as_ref()
@@ -52,14 +55,15 @@ fn main() {
             }
         }
 
-        Commands::Run {} => {}
+        Commands::Run { name } => {
+            run_task(name.as_ref().unwrap(), &env_path);
+        }
 
-        Commands::Init {} => match env::current_dir() {
-            Ok(path) => create_gitter_dir(&path),
-            Err(e) => println!("{}", e),
-        },
-
+        Commands::Init {} => {
+            create_gitter_dir(&env_path);
+        }
         Commands::Set { key, value } => {
+            let settings_content: Vec<String> = check_for_settings();
             let settings: Vec<String> = replace_settings_value(settings_content, key, value);
             match write_settings(&settings) {
                 Ok(_) => println!("Settings saved."),
@@ -68,6 +72,7 @@ fn main() {
         }
 
         Commands::Show { all, key } => {
+            let settings_content: Vec<String> = check_for_settings();
             if *all {
                 for x in settings_content.iter() {
                     println!("{}", x);
@@ -81,28 +86,68 @@ fn main() {
     }
 }
 
-fn create_gitter_dir(path: &PathBuf) {
-    let git_path = path.join(".git");
+fn run_task(name: &str, env_path: &Path) {
+    let gitter_path = get_gitter_dir(env_path);
+    let task_path = gitter_path.join(name.to_string() + ".txt");
+
+    if task_path.exists() {
+        let task = fs::read_to_string(&task_path).unwrap();
+        let lines: Vec<&str> = task.lines().collect();
+
+        if !lines.is_empty() {
+            for command in lines {
+                if command.trim().is_empty() {
+                    continue;
+                }
+
+                let mut child = Command::new("git")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .args(command.split_whitespace())
+                    .spawn()
+                    .expect("Failed to spawn child process");
+
+                let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+                //let stdout = BufReader::new(child.stdout.take().expect("Failed to capture stdout"));
+                //let stderr = BufReader::new(child.stderr.take().expect("Failed to capture stderr"));
+
+                let output = child.wait_with_output().expect("Failed to read stdout");
+                println!("{}", String::from_utf8_lossy(&output.stdout));
+                //stdin
+                //  .write(git_command.as_bytes())
+                //.expect("Failed to write to stdin"); }
+            }
+        }
+    }
+}
+
+fn get_gitter_dir(env_path: &Path) -> PathBuf {
+    let git_path = env_path.join(".git");
 
     if git_path.exists() && git_path.is_dir() {
         let gitter_path = git_path.join("gitter");
+        return gitter_path;
+    }
+    panic!()
+}
 
-        if fs::create_dir_all(&gitter_path).is_ok() {
-            let file_path = gitter_path.join("settings.txt");
+fn create_gitter_dir(path: &PathBuf) {
+    let gitter_path = get_gitter_dir(path);
 
-            match File::create(&file_path) {
-                Ok(mut file) => {
-                    if let Err(e) = writeln!(file, "Add your settings here") {
-                        eprintln!("Failed to write to the file: {}", e);
-                    } else {
-                        println!("Created and wrote to file: {}", file_path.display());
-                    }
+    if fs::create_dir_all(&gitter_path).is_ok() {
+        let file_path = gitter_path.join("settings.txt");
+
+        match File::create(&file_path) {
+            Ok(mut file) => {
+                if let Err(e) = writeln!(file, "Add your settings here") {
+                    eprintln!("Failed to write to the file: {}", e);
+                } else {
+                    println!("Created and wrote to file: {}", file_path.display());
                 }
-                Err(e) => println!("{}", e),
             }
+            Err(e) => println!("{}", e),
         }
-    } else {
-        println!(".git folder does not exist, please run git init firt.");
     }
 }
 
@@ -142,7 +187,7 @@ fn write_settings(settings: &[String]) -> io::Result<()> {
     let parent = cwd.parent().expect("Failed to extract parent dir!");
     let settings_path = parent.join("gitter_settings.txt");
 
-    let mut file = fs::File::create(settings_path)?;
+    let mut file = File::create(settings_path)?;
 
     for line in settings {
         writeln!(file, "{}", line)?;
@@ -154,9 +199,9 @@ fn write_settings(settings: &[String]) -> io::Result<()> {
 fn check_for_settings() -> Vec<String> {
     let caller_path = env::current_dir().unwrap();
     let repo_settings = caller_path.join(".git").join("gitter").join("settings.txt");
-    let cwd = env::current_exe().expect("CWD not found!");
-    let parent = cwd.parent().expect("Failed to extract parent dir!");
-    let settings_path = parent.join("gitter_settings.txt");
+    //let cwd = env::current_exe().expect("CWD not found!");
+    //let parent = cwd.parent().expect("Failed to extract parent dir!");
+    //let settings_path = parent.join("gitter_settings.txt");
     let mut settings = String::new();
 
     if !Path::new(&repo_settings).exists() {
@@ -211,7 +256,7 @@ fn git_commit(message: &str, path: &str) {
     print_output(&output);
 }
 
-fn git_command(command: structs::GitCommand, branch: &str, path: &str) {
+fn git_command(command: GitCommand, branch: &str, path: &str) {
     let args = match command {
         GitCommand::Push => vec!["push", "origin", branch],
         GitCommand::Merge => vec!["merge", branch],
