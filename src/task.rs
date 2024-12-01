@@ -43,12 +43,12 @@ impl Task {
                 let output = child.wait_with_output().expect("Failed to read stdout.");
                 println!("{}", String::from_utf8_lossy(&output.stdout));
             }
+        } else {
+            eprintln!(
+                "Task {} on path {} does not exist.",
+                self.task_name,
+                self.task_path.display()
+            );
         }
-
-        eprintln!(
-            "Task {} on path {} does not exist.",
-            self.task_name,
-            self.task_path.display()
-        );
     }
 }

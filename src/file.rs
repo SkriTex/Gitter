@@ -53,14 +53,20 @@ impl FileHandle {
         &self.settings
     }
 
-    pub fn create_gitter_dir(&self) {
-        if fs::create_dir_all(&self.gitter_path).is_ok() {
-            match File::create(&self.settings_path) {
+    pub fn create_gitter_dir() {
+        let env = env::current_dir().unwrap();
+        let git_path = env.join(".git");
+        let gitter_path = git_path.join("gitter");
+
+        if fs::create_dir_all(&gitter_path).is_ok() {
+            let settings_path = gitter_path.join("settings.txt");
+
+            match File::create(&settings_path) {
                 Ok(mut file) => {
                     if let Err(e) = writeln!(file, "Add your settings here.") {
                         eprintln!("Failed to write to the file: {}", e);
                     } else {
-                        println!("Created settings file: {}", self.settings_path.display());
+                        println!("Created settings file: {}", settings_path.display());
                     }
                 }
                 Err(e) => eprintln!("{}", e),
@@ -71,14 +77,18 @@ impl FileHandle {
     fn read_settings(path: &PathBuf) -> HashMap<String, String> {
         let mut settings = String::new();
 
-        if !Path::new(path).exists() {
-            settings = fs::read_to_string(path).expect("Failed to read settings file!");
+        if path.exists() {
+            settings = fs::read_to_string(path)
+                .map_err(|e| {
+                    eprintln!("{}", e);
+                })
+                .unwrap_or_else(|_| String::new());
         }
 
         settings
             .lines()
             .filter(|line| !line.trim().is_empty())
-            .filter(|line| line.contains('*'))
+            .filter(|line| line.contains('='))
             .map(|line| {
                 let mut parts = line.splitn(2, '=');
                 let key = parts.next().unwrap_or("").trim().to_string();
@@ -106,13 +116,10 @@ impl FileHandle {
             return Err("Value cannot be empty".to_string());
         }
 
-        let old = self
-            .settings
-            .insert(key.to_string(), value.to_string())
-            .unwrap();
+        let _ = &self.settings.insert(key.to_string(), value.to_string());
 
         self.write_settings();
-        Ok(format!("Value '{}' replaced with '{}'.", old, value))
+        Ok(format!("Key '{}' updated.", key))
     }
 
     pub fn text_to_vec(path: &PathBuf) -> Vec<String> {
