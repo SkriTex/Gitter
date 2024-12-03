@@ -16,10 +16,15 @@ fn main() {
             FileHandle::create_gitter_dir();
         }
 
-        Commands::Run { name } => {
+        Commands::Run { name, args } => {
             let file_handle = FileHandle::new();
             let task_name = name.as_ref().unwrap().to_string();
-            let task = Task::new(task_name, file_handle.get_gitter_path().clone());
+            let task = Task::new(
+                task_name,
+                file_handle.get_gitter_path().clone(),
+                file_handle.get_settings().clone(),
+                args.clone()
+            );
             task.run_task();
         }
 
