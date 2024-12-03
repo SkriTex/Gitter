@@ -1,0 +1,30 @@
+name: Build and Release EXE (Windows Only)
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow from the GitHub UI
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Rust
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      # Step 3: Build the release executable
+      - name: Build release executable
+        run: cargo build --release
+
+      # Step 4: Upload the compiled .exe as an artifact
+      - name: Upload .exe artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-app-exe
+          path: target/release/*.exe
