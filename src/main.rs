@@ -19,7 +19,10 @@ fn main() {
         Commands::Run { name } => {
             let file_handle = FileHandle::new();
             let task_name = name.as_ref().unwrap().to_string();
-            let task = Task::new(task_name, file_handle.get_gitter_path().clone());
+            let task = Task::new(task_name,
+                file_handle.get_gitter_path().clone(),
+                file_handle.get_settings().clone()
+                );
             task.run_task();
         }
 
