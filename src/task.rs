@@ -45,16 +45,16 @@ impl Task {
                 command = self.replace_settings(command);
                 command = self.replace_args(command);
                 println!("{command}");
-                // let child = Command::new("git")
-                //     .stdin(Stdio::piped())
-                //     .stdout(Stdio::piped())
-                //     .stderr(Stdio::piped())
-                //     .args(command.split_whitespace())
-                //     .spawn()
-                //     .expect("Failed to spawn child process");
-                //
-                // let output = child.wait_with_output().expect("Failed to read stdout.");
-                // println!("{}", String::from_utf8_lossy(&output.stdout));
+                let child = Command::new("git")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .args(command.split_whitespace())
+                    .spawn()
+                    .expect("Failed to spawn child process");
+
+                let output = child.wait_with_output().expect("Failed to read stdout.");
+                println!("{}", String::from_utf8_lossy(&output.stdout));
             }
         } else {
             eprintln!(
@@ -85,3 +85,5 @@ impl Task {
         command
     }
 }
+
+
