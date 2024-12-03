@@ -10,15 +10,22 @@ pub struct Task {
     task_name: String,
     task_path: PathBuf,
     settings: HashMap<String, String>,
+    args: Vec<(String, String)>,
 }
 
 impl Task {
-    pub fn new(task_name: String, gitter_path: PathBuf, settings: HashMap<String, String>) -> Task {
+    pub fn new(
+        task_name: String,
+        gitter_path: PathBuf,
+        settings: HashMap<String, String>,
+        args: Vec<(String, String)>,
+    ) -> Task {
         let task_path: PathBuf = gitter_path.join(task_name.clone() + ".txt");
         Task {
             task_name,
             task_path,
             settings,
+            args,
         }
     }
 
@@ -36,6 +43,7 @@ impl Task {
                 }
 
                 command = self.replace_settings(command);
+                command = self.replace_args(command);
                 println!("{command}");
                 // let child = Command::new("git")
                 //     .stdin(Stdio::piped())
@@ -57,9 +65,20 @@ impl Task {
         }
     }
 
+    //maybe some optimization for this to not iterate over everything -.-
+
     fn replace_settings(&self, mut command: String) -> String {
         for (key, value) in &self.settings {
             let placeholder = format!("${{{}}}", key);
+            command = command.replace(&placeholder, value);
+        }
+
+        command
+    }
+
+    fn replace_args(&self, mut command: String) -> String {
+        for (key, value) in &self.args {
+            let placeholder = format!("{{{{{}}}}}", key);
             command = command.replace(&placeholder, value);
         }
 
