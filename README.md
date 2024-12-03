@@ -29,9 +29,16 @@ The Git Automation Tool simplifies common Git operations such as merging feature
 - [-k|--key] <key> Displays value of key.
 - Examples: `show --all` | `show --key branch_name`
 
-**run [-t | --task] <task>**
+**run [-t | --task] <task> <args>**
 - <task> is name of the '.txt' file in gitter folder that should be run.
-- Example `run --task myTask.txt`
+- <args> are key value pairs that you want to inject into you placeholders in command
+- Example `run --task myTask.txt mess="Commit message"`
+
+**Injection examples**
+-${<key>} placeholder is used to inject value from settings
+-{{<key>}} is used to inject value from passed arguments
+- Example: <em>`commit {{m}}`<br>`checkout ${branch}`</em>
+- Gitter call example: <em>`gitter run task m="Commit message"`</em>
 
 **Task example**
 <em>Note that tasks are added manually in gitter directory.
