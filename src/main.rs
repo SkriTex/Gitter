@@ -12,9 +12,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Init {} => {
-            FileHandle::create_gitter_dir();
-        }
+        Commands::Init {} => FileHandle::create_gitter_dir(),
 
         Commands::Run { name, args } => {
             let file_handle = FileHandle::new();
@@ -23,7 +21,7 @@ fn main() {
                 task_name,
                 file_handle.get_gitter_path().clone(),
                 file_handle.get_settings().clone(),
-                args.clone()
+                args.clone(),
             );
             task.run_task();
         }

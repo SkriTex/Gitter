@@ -10,3 +10,4 @@ authors = ["Author"]
 clap = { version = "4.5.7", features = ["derive"] }
 clap_derive = "4.5.5"
 colored = "2.1.0"
+tempfile = "3.14.0"

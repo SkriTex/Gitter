@@ -101,9 +101,14 @@ impl FileHandle {
     fn write_settings(&self) {
         let mut file = File::create(&self.settings_path).expect("Could not open settings file.");
 
-        for (key, value) in &self.settings {
-            writeln!(file, "{}={}", key, value)
-                .expect(&format!("Could not write '{}={}' in settings", key, value));
+        let mut sorted_keys: Vec<_> = self.settings.keys().collect();
+        sorted_keys.sort();
+
+        for key in sorted_keys {
+            writeln!(file, "{}={}", key, self.settings[key]).expect(&format!(
+                "Could not write '{}={}' in settings",
+                key, self.settings[key]
+            ));
         }
     }
 
@@ -125,5 +130,121 @@ impl FileHandle {
     pub fn text_to_vec(path: &PathBuf) -> Vec<String> {
         let text = fs::read_to_string(path).unwrap();
         text.lines().map(|line| line.to_string()).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_create_gitter_dir() {
+        let temp_dir = tempdir().unwrap();
+        std::env::set_current_dir(&temp_dir).unwrap();
+
+        FileHandle::create_gitter_dir();
+
+        let gitter_path = temp_dir.path().join(".git/gitter");
+        assert!(gitter_path.exists());
+        assert!(gitter_path.is_dir());
+
+        let settings_path = gitter_path.join("settings.txt");
+        assert!(settings_path.exists());
+        let content = fs::read_to_string(settings_path).unwrap();
+        assert_eq!(content.trim(), "Add your settings here.");
+    }
+
+    #[test]
+    fn test_write_settings() {
+        let temp_dir = tempdir().unwrap();
+        let temp_file = temp_dir.path().join("settings.txt");
+
+        let mut test_settings = HashMap::new();
+        test_settings.insert("key1".to_string(), "value1".to_string());
+        test_settings.insert("key2".to_string(), "value2".to_string());
+
+        let file_handle = FileHandle {
+            settings: test_settings,
+            settings_path: temp_file.clone(),
+            gitter_path: Path::new("").to_path_buf(),
+        };
+
+        file_handle.write_settings();
+
+        let content =
+            fs::read_to_string(&file_handle.settings_path).expect("Failed to read settings file");
+        let expected_content = "key1=value1\nkey2=value2\n";
+        assert_eq!(content, expected_content);
+    }
+
+    #[test]
+    fn test_read_settings() {
+        let temp_dir = tempdir().unwrap();
+        let temp_file = temp_dir.path().join("settings.txt");
+
+        fs::write(&temp_file, "key1=value1\nkey2=value2\n").expect("Failed to write settings.");
+
+        let mut test_settings = HashMap::new();
+        test_settings.insert("key1".to_string(), "value1".to_string());
+        test_settings.insert("key2".to_string(), "value2".to_string());
+
+        let settings = FileHandle::read_settings(&temp_file);
+
+        assert_eq!(test_settings, settings);
+    }
+
+    #[test]
+    fn test_get_settings_value() {
+        let mut settings = HashMap::new();
+        settings.insert("key1".to_string(), "value1".to_string());
+
+        let file_handle = FileHandle {
+            settings: settings.clone(),
+            gitter_path: PathBuf::new(),
+            settings_path: PathBuf::new(),
+        };
+
+        let value = file_handle.get_settings_value("key1");
+
+        assert_eq!("value1", value);
+    }
+
+    #[test]
+    fn test_set_settings_value() {
+        let temp_dir = tempdir().unwrap();
+        let temp_file = temp_dir.path().join("settings.txt");
+
+        let mut test_settings = HashMap::new();
+
+        let mut file_handle = FileHandle {
+            settings: test_settings.clone(),
+            settings_path: temp_file,
+            gitter_path: PathBuf::new(),
+        };
+
+        test_settings.insert("key1".to_string(), "value1".to_string());
+
+        let result = file_handle.set_settings_value("key1", "value1");
+
+        match result {
+            Err(e) => assert_eq!("Value cannot be empty", e),
+            Ok(o) => assert_eq!("Key 'key1' updated.", o),
+        }
+
+        assert_eq!(test_settings, file_handle.settings);
+    }
+
+    #[test]
+    fn test_text_to_vec() {
+        let temp_dir = tempdir().unwrap();
+        let temp_file = temp_dir.path().join("settings.txt");
+
+        fs::write(&temp_file, "key1=value1\nkey2=value2\n").expect("Failed to write settings file.");
+
+        let result: Vec<String> = FileHandle::text_to_vec(&temp_file);
+        let expected: Vec<String> = vec!["key1=value1".to_string(), "key2=value2".to_string()];
+
+        assert_eq!(expected, result);
     }
 }
