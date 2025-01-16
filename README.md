@@ -5,7 +5,7 @@ The Git Automation Tool simplifies common Git operations such as merging feature
 
 ## Commands
 
-<em>Note: gitter should be run from root of repository where '.git' folder is located</em>
+<em>Note: gitter should be added to PATH and run from root of repository where '.git' folder is located</em>
 
 **init** - Creates new gitter folder structure with files.
 
