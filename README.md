@@ -48,5 +48,3 @@ All tasks are written in text files where each line represents one git command.<
 `checkout master`<br>`pull origin master`<br>`checkout local`<br>`merge master`
 ---
 
-This documentation provides clear instructions and examples for using the gitter commands.
-
