@@ -29,10 +29,10 @@ The Git Automation Tool simplifies common Git operations such as merging feature
 - [-k|--key] <key> Displays value of key.
 - Examples: `show --all` | `show --key branch_name`
 
-**run [-t | --task] <task> <args>**
+**run <task> <args>**
 - <task> is name of the '.txt' file in gitter folder that should be run.
 - <args> are key value pairs that you want to inject into you placeholders in command
-- Example `run --task myTask.txt mess="Commit message"`
+- Example `run myTask mess="Commit message"`
 
 **Injection examples**
 -${<key>} placeholder is used to inject value from settings
