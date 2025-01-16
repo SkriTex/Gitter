@@ -1,0 +1,9 @@
+# CODEOWNERS
+# This file specifies code ownership rules. The listed user will be required to review changes to specified paths.
+
+# Assign SkriTex as the owner for all files in the repository
+* @SkriTex
+
+# Assign SkriTex as the owner for specific directories or files (optional examples)
+# /src/ @SkriTex
+# /README.md @SkriTex
